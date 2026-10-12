@@ -1,0 +1,40 @@
+(() => {
+  "use strict";
+  const $=s=>document.querySelector(s), safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])), money=n=>`${Number(n||0).toLocaleString("fr-DZ")} دج`;
+  const cfg=window.QMR_CONFIG||{};
+  const configured=Boolean(cfg.SUPABASE_URL&&cfg.SUPABASE_ANON_KEY&&window.supabase);
+  const db=configured?window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+  let products=[],orders=[];
+  if(!configured){$("#loginPanel").hidden=true;$("#setupNotice").hidden=false;}
+  $("#loginForm").addEventListener("submit",async e=>{
+    e.preventDefault();if(!db)return;const f=new FormData(e.currentTarget),m=$("#loginMessage");m.textContent="جارٍ التحقق...";m.style.color="#817b70";
+    try{const {error}=await db.auth.signInWithPassword({email:f.get("email"),password:f.get("password")});if(error)throw error;await boot();}
+    catch(err){m.textContent="تعذر تسجيل الدخول. تحققي من البريد وكلمة المرور وإعدادات Supabase.";m.style.color="#9a453a";}
+  });
+  $("#logoutButton").addEventListener("click",async()=>{if(db)await db.auth.signOut();$("#dashboard").hidden=true;$("#loginPanel").hidden=false;});
+  async function boot(){
+    if(!db)return;const {data:{session}}=await db.auth.getSession();
+    if(!session){$("#loginPanel").hidden=false;$("#dashboard").hidden=true;return;}
+    const {data:profile,error}=await db.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
+    if(error||!profile||profile.role!=="admin"){await db.auth.signOut();$("#loginMessage").textContent="هذا الحساب غير مخوّل للإدارة. أضيفي دوره admin من SQL Editor بحسابك الموثوق.";$("#loginPanel").hidden=false;$("#dashboard").hidden=true;return;}
+    $("#loginPanel").hidden=true;$("#dashboard").hidden=false;$("#adminEmail").textContent=session.user.email||"";await loadProducts();await loadOrders();
+  }
+  async function loadProducts(){const {data,error}=await db.from("products").select("*").order("created_at",{ascending:false});if(error){$("#adminProducts").innerHTML='<p class="message">تعذر تحميل المنتجات. تحققي من سياسات RLS.</p>';return;}products=data||[];renderProducts();}
+  function renderProducts(){const el=$("#adminProducts");if(!products.length){el.innerHTML='<p class="hint">لا توجد منتجات بعد. اختاري «منتج جديد» لإضافة أول منتج.</p>';return;}el.innerHTML=products.map(p=>`<article class="admin-item"><img src="${safe(p.image_url||"assets/qmr-logo.jpg")}" alt=""><div><h3>${safe(p.name)}</h3><p>${p.category==="girls"?"البنات":"النساء"} • ${money(p.price)} • ${p.active?"ظاهر في المتجر":"مخفي"}</p><p>${safe(p.description||"")}</p></div><div class="item-actions"><button data-edit="${safe(p.id)}">تعديل</button><button class="danger" data-delete="${safe(p.id)}">حذف</button></div></article>`).join("");}
+  function showForm(p=null){const f=$("#productForm");f.hidden=false;f.reset();f.elements.id.value=p?.id||"";if(p){["name","category","price","old_price","description","image_url"].forEach(k=>f.elements[k].value=p[k]??"");f.elements.active.checked=p.active!==false;}else{f.elements.active.checked=true;}$("#productMessage").textContent="";f.scrollIntoView({behavior:"smooth",block:"center"});}
+  $("#newProduct").addEventListener("click",()=>showForm());$("#cancelProduct").addEventListener("click",()=>$("#productForm").hidden=true);
+  $("#adminProducts").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]");if(edit){const p=products.find(x=>String(x.id)===edit.dataset.edit);if(p)showForm(p);return;}const del=e.target.closest("[data-delete]");if(del&&confirm("هل تريدين حذف هذا المنتج؟")){const {error}=await db.from("products").delete().eq("id",del.dataset.delete);if(error)alert("تعذر الحذف. تحققي من صلاحيات الإدارة.");else await loadProducts();}});
+  async function uploadImage(file){if(!file)return null;if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024)throw new Error("اختاري صورة JPG أو PNG أو WebP لا تتجاوز 5MB.");const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const path=`products/${crypto.randomUUID()}.${ext}`;const {error}=await db.storage.from("product-images").upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;const {data}=db.storage.from("product-images").getPublicUrl(path);return data.publicUrl;}
+  $("#productForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,m=$("#productMessage"),btn=f.querySelector('[type="submit"]');btn.disabled=true;m.textContent="جارٍ الحفظ...";m.style.color="#817b70";
+    try{const fd=new FormData(f);let imageUrl=String(fd.get("image_url")||"").trim();const file=$("#imageFile").files[0];if(file)imageUrl=await uploadImage(file);if(!/^https:\/\//i.test(imageUrl))throw new Error("رابط الصورة يجب أن يبدأ بـ https:// أو اختاري صورة من الهاتف.");const payload={name:String(fd.get("name")).trim(),category:fd.get("category"),price:Number(fd.get("price")),old_price:fd.get("old_price")?Number(fd.get("old_price")):null,description:String(fd.get("description")||"").trim(),image_url:imageUrl,active:f.elements.active.checked};if(!payload.name||!Number.isFinite(payload.price)||payload.price<0)throw new Error("تحققي من اسم المنتج والسعر.");
+      const id=String(fd.get("id")||"");const result=id?await db.from("products").update(payload).eq("id",id):await db.from("products").insert(payload);if(result.error)throw result.error;m.style.color="#42704d";m.textContent="تم حفظ المنتج.";await loadProducts();setTimeout(()=>{f.hidden=true;},500);
+    }catch(err){m.style.color="#9a453a";m.textContent=err.message||"تعذر الحفظ. تحققي من إعدادات قاعدة البيانات والتخزين.";}finally{btn.disabled=false;}
+  });
+  async function loadOrders(){const el=$("#adminOrders");el.innerHTML='<p class="hint">جارٍ تحميل الطلبات...</p>';const {data,error}=await db.from("orders").select("*").order("created_at",{ascending:false}).limit(100);if(error){el.innerHTML='<p class="message">تعذر تحميل الطلبات. تحققي من سياسات RLS.</p>';return;}orders=data||[];renderOrders();}
+  function renderOrders(){const el=$("#adminOrders");if(!orders.length){el.innerHTML='<p class="hint">لا توجد طلبات بعد.</p>';return;}el.innerHTML=orders.map(o=>`<article class="order-item"><div class="order-head"><h3>طلب #${safe(String(o.id).slice(0,8))} — ${safe(o.customer_name)}</h3><strong>${money(o.total)}</strong></div><p>الهاتف: ${safe(o.phone)}<br>الولاية: ${safe(o.wilaya)}<br>العنوان: ${safe(o.address)}<br>المنتجات: ${safe((o.items||[]).map(i=>`${i.name} × ${i.quantity}`).join("، "))}<br>ملاحظات: ${safe(o.notes||"—")}<br>تاريخ الطلب: ${o.created_at?new Date(o.created_at).toLocaleString("fr-DZ"):"—"}</p><label>حالة الطلب <select data-status="${safe(o.id)}"><option value="new" ${o.status==="new"?"selected":""}>جديد</option><option value="confirmed" ${o.status==="confirmed"?"selected":""}>تم التأكيد</option><option value="preparing" ${o.status==="preparing"?"selected":""}>قيد التحضير</option><option value="shipped" ${o.status==="shipped"?"selected":""}>تم الشحن</option><option value="delivered" ${o.status==="delivered"?"selected":""}>تم التسليم</option><option value="cancelled" ${o.status==="cancelled"?"selected":""}>ملغي</option></select></label></article>`).join("");}
+  $("#adminOrders").addEventListener("change",async e=>{const sel=e.target.closest("[data-status]");if(!sel)return;const {error}=await db.from("orders").update({status:sel.value}).eq("id",sel.dataset.status);if(error){alert("تعذر تحديث حالة الطلب.");await loadOrders();}});
+  $("#refreshOrders").addEventListener("click",loadOrders);
+  document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b===btn));document.querySelectorAll(".admin-section").forEach(p=>p.hidden=p.id!==btn.dataset.tab);}));
+  if(db)db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"){$("#dashboard").hidden=true;$("#loginPanel").hidden=false;}});
+  boot();
+})(); 
