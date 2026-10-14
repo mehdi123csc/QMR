@@ -12,7 +12,7 @@
 تشغيل الموقع
 ------------
 1. فك ضغط الملف، وارفع محتويات هذا المجلد إلى جذر استضافة الموقع.
-2. افتح config.js وضع رابط مشروع Supabase ومفتاح anon/publishable العام فقط.
+2. تم ضبط config.js مسبقًا على مشروع Supabase الجديد. رابط SUPABASE_URL يجب أن يكون رابط المشروع الأساسي دون /rest/v1/.
 3. من Supabase SQL Editor شغّل supabase-setup.sql.
 4. في Supabase Authentication أنشئ مستخدم الإدارة.
 5. انسخ UUID للمستخدم من Authentication > Users ثم نفّذ، بعد استبدال القيمة:
@@ -25,8 +25,8 @@
 إعداد config.js
 ----------------
 window.QMR_CONFIG = {
-  SUPABASE_URL: "https://PROJECT-REF.supabase.co",
-  SUPABASE_ANON_KEY: "PUBLIC_ANON_OR_PUBLISHABLE_KEY"
+  SUPABASE_URL: "https://ssuadfuscyjnmceonccv.supabase.co",
+  SUPABASE_ANON_KEY: "ضع_المفتاح_العام_في_ملف_config.js"
 };
 
 لا تضع service_role أو أي secret key في JavaScript أو GitHub أو المتصفح.
@@ -59,3 +59,9 @@ window.QMR_CONFIG = {
 - config.js: إعداد الربط العام مع Supabase.
 - supabase-setup.sql: الجداول والسياسات والتخزين.
 - assets/qmr-logo.jpg: شعار المتجر.
+
+معلومات المشروع الحالي
+----------------------
+رابط المشروع: https://ssuadfuscyjnmceonccv.supabase.co
+ملف config.js مضبوط على المفتاح العام الذي زودنا به المستخدم.
+لم يتم اختبار الاتصال بالشبكة أو تشغيل SQL على قاعدة البيانات الحقيقية من داخل هذه العملية.
