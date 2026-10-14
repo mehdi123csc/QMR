@@ -2,7 +2,7 @@
 ================================
 
 المحتويات
-- index.html / style.css / script.js: واجهة المتجر وسلة الطلبات. تأكد أن الاسم هو index.html بالضبط.
+- index.html / style.css / script.js: واجهة المتجر وسلة الطلبات.
 - admin.html / admin.css / admin.js: لوحة الإدارة.
 - config.js: بيانات الربط العامة مع Supabase (فارغة افتراضيًا).
 - supabase-setup.sql: الجداول وسياسات RLS والتخزين.
@@ -12,8 +12,8 @@
 -----------------------------
 1. ارفع ملفات هذا المجلد إلى مستودع GitHub.
 2. افتح مشروع Supabase أو أنشئ مشروعًا جديدًا.
-3. للمشروع الجديد: من SQL Editor شغّل كامل ملف supabase-setup.sql. للمشروع الحالي الذي لا تظهر فيه المنتجات: شغّل ملف supabase-fix-products.sql فقط.
-4. من Project Settings > API انسخ Project URL و anon/public key (أو publishable key) فقط، وضعهما في config.js (الملف المرفق مُعدّ بالفعل لمشروع QMR الحالي):
+3. من SQL Editor شغّل كامل ملف supabase-setup.sql.
+4. من Project Settings > API انسخ Project URL و anon/public key (أو publishable key) فقط، وضعهما في config.js:
    SUPABASE_URL: "https://YOUR-PROJECT.supabase.co"
    SUPABASE_ANON_KEY: "YOUR_PUBLIC_ANON_KEY"
    لا تضع service_role أو secret key في أي ملف يصل للمتصفح.
@@ -55,11 +55,3 @@
 - مجموع السعر المرسل من المتصفح قابل للتلاعب تقنيًا؛ قبل تشغيل المتجر تجاريًا يفضّل إنشاء Edge Function تتحقق من أسعار المنتجات والمخزون وتحسب الإجمالي على الخادم، مع حماية من السبام.
 - بيانات الطلبات تتضمن الهاتف والعنوان؛ لا تشاركها علنًا، وامنح صلاحية الإدارة فقط لمن تثق بهم.
 - لا يتم إرسال طلب فعلي عندما يكون Supabase غير مربوط؛ الموقع يعرض تنبيهًا بدل الادعاء بأن الطلب نجح.
-
-
-إصلاح مهم للمشروع الحالي
-------------------------
-- ملف script.js يقرأ الآن المفتاح من QMR_CONFIG.SUPABASE_ANON_KEY كما هو موجود في config.js.
-- ملف supabase-fix-products.sql يعالج سياسة قراءة المنتجات للزوار دون منح الزوار صلاحية قراءة الطلبات.
-- ارفع index.html (وليس index (1).html) إلى جذر مستودع GitHub.
-- لا ترفع أي service_role أو secret key إلى GitHub.

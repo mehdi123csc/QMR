@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11100e">
+  <meta name="description" content="Qmr — أزياء نسائية وبنات مختارة بذوق فاخر. تسوقي أحدث القطع مع الدفع عند الاستلام.">
+  <title>Qmr | أزياء النساء والبنات</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div class="announcement"><span class="announcement-star">✦</span> مرحبًا بكِ في Qmr — حيث تتحوّل الأناقة إلى حكاية <span class="announcement-star">✦</span> الدفع عند الاستلام داخل الجزائر</div>
+  <header class="site-header">
+    <button class="icon-btn menu-toggle" id="menuToggle" aria-label="فتح القائمة">☰</button>
+    <a class="brand" href="#home" aria-label="Qmr الصفحة الرئيسية"><img src="./qmr-logo.jpg" alt="شعار Qmr" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./assets/qmr-logo.jpg';}else{this.onerror=null;this.hidden=true;this.parentElement.classList.add('logo-fallback');}"><span>Qmr</span></a>
+    <nav id="mainNav" class="main-nav">
+      <a href="#home">الرئيسية</a><a href="#women">ملابس النساء</a><a href="#girls">ملابس البنات</a><a href="#products">تسوقي الآن</a>
+    </nav>
+    <button class="cart-button" id="openCart" aria-label="فتح السلة">السلة <span id="cartCount">0</span></button>
+  </header>
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <p class="eyebrow">QMR • YOUR STYLE, YOUR MOON</p>
+        <p class="hero-kicker">أهلًا بكِ في عالمٍ صُمّم ليشبهكِ</p>
+        <h1>لأنكِ تستحقين<br><em>تألّقًا استثنائيًا</em></h1>
+        <p class="hero-text">مرحبًا بكِ في Qmr، وجهتكِ لاكتشاف الأناقة التي تعبّر عنكِ. اختيارات نسائية وبناتية تجمع بين الذوق الرفيع، التفاصيل الجميلة، والثقة في كل إطلالة.</p>
+        <div class="hero-actions"><a class="btn btn-gold" href="#products">اكتشفي المجموعة <span>←</span></a><a class="text-link" href="#about">حكاية Qmr</a></div>
+        <div class="hero-note"><span class="gold-dot"></span> تشكيلة مختارة • الدفع عند الاستلام</div>
+      </div>
+      <div class="hero-art">
+        <div class="hero-frame"><img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1100&q=85" alt="إطلالة أزياء نسائية أنيقة"></div>
+        <div class="hero-stamp">Qmr <small>جمالكِ.. بأسلوبكِ.. كل يوم</small></div>
+        <div class="hero-side-note">NEW SEASON / 2026</div>
+      </div>
+    </section>
+    <section class="trust-strip">
+      <div><span>✦</span><b>اختيارات أنيقة</b><small>قطع منتقاة بعناية</small></div>
+      <div><span>◇</span><b>طلب سهل</b><small>من هاتفك في دقائق</small></div>
+      <div><span>♡</span><b>الدفع عند الاستلام</b><small>ادفعي عند وصول طلبك</small></div>
+    </section>
+    <section class="section category-section">
+      <div class="section-heading"><div><p class="eyebrow">SHOP BY CATEGORY</p><h2>اختاري عالمك</h2></div><p>تفاصيل صغيرة، أناقة تبقى.</p></div>
+      <div class="category-grid">
+        <a class="category-card women-card" href="#women"><img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=80" onerror="this.src='https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80'" alt="أزياء النساء"><span>01 / WOMEN</span><h3>ملابس النساء</h3><b>تسوقي المجموعة ↖</b></a>
+        <a class="category-card girls-card" href="#girls"><img src="https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=900&q=80" alt="أزياء البنات"><span>02 / GIRLS</span><h3>ملابس البنات</h3><b>تسوقي المجموعة ↖</b></a>
+      </div>
+    </section>
+    <section class="section products-section" id="products">
+      <div class="section-heading"><div><p class="eyebrow">THE QMR EDIT</p><h2>قطع تستحق مكانًا في خزانتك</h2></div><p>أسعار بالدينار الجزائري</p></div>
+      <div class="filter-row" role="group" aria-label="تصفية المنتجات">
+        <button class="filter-chip active" data-filter="all">الكل</button><button class="filter-chip" data-filter="women" id="women">النساء</button><button class="filter-chip" data-filter="girls" id="girls">البنات</button>
+      </div>
+      <div id="productGrid" class="product-grid"><div class="loading-state">نحضّر لكِ المجموعة...</div></div>
+      <p class="empty-products" id="emptyProducts" hidden>لا توجد منتجات في هذا القسم حاليًا. عودي قريبًا لاكتشاف الجديد.</p>
+    </section>
+    <section class="editorial" id="about"><div class="editorial-mark">Q</div><div><p class="eyebrow">A LITTLE MORE YOU</p><h2>أسلوبكِ، بطريقتكِ.</h2><p>في Qmr نؤمن أن الأناقة ليست مناسبة خاصة؛ إنها شعور تختارينه كل يوم. اكتشفي قطعًا تمنحك الثقة والراحة، من الإطلالة اليومية إلى اللحظات المميزة.</p></div><a class="btn btn-outline" href="#products">اكتشفي المنتجات</a></section>
+  </main>
+  <footer class="site-footer"><a class="footer-brand" href="#home">Qmr<span>✦</span></a><p>أناقة مختارة للنساء والبنات.</p><div class="footer-links"><a href="#products">المجموعة</a><a href="#about">من نحن</a><a href="admin.html">الإدارة</a></div><small>© <span id="year"></span> Qmr. جميع الحقوق محفوظة.</small></footer>
+  <div class="overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="سلة المشتريات" aria-hidden="true">
+    <div class="drawer-head"><div><p class="eyebrow">YOUR SELECTION</p><h2>سلة التسوق</h2></div><button class="icon-btn" id="closeCart" aria-label="إغلاق السلة">×</button></div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-summary"><div><span>المجموع</span><strong id="cartTotal">0 دج</strong></div><small>تكلفة التوصيل تُؤكّد عند التواصل لتأكيد الطلب.</small></div>
+    <form id="checkoutForm" class="checkout-form">
+      <h3>بيانات التوصيل</h3>
+      <label>الاسم الكامل<input name="customer_name" required maxlength="100" autocomplete="name" placeholder="اسمك الكامل"></label>
+      <label>رقم الهاتف<input name="phone" required type="tel" inputmode="tel" maxlength="25" autocomplete="tel" placeholder="05 / 06 / 07 ..."></label>
+      <label>الولاية<input name="wilaya" required maxlength="80" placeholder="الولاية"></label>
+      <label>العنوان بالتفصيل<textarea name="address" required maxlength="500" rows="2" placeholder="البلدية، الحي، العنوان..."></textarea></label>
+      <label>ملاحظات (اختياري)<textarea name="notes" maxlength="500" rows="2" placeholder="المقاس أو اللون المفضل..."></textarea></label>
+      <button class="btn btn-gold full-btn" type="submit">تأكيد الطلب — الدفع عند الاستلام</button>
+      <p class="form-message" id="checkoutMessage" role="status"></p>
+      <small class="privacy-note">بإرسال الطلب، توافقين على استخدام بياناتك للتواصل بشأن هذا الطلب فقط.</small>
+    </form>
+  </aside>
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
