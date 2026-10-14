@@ -49,10 +49,14 @@ $$;
 revoke all on function public.qmr_is_admin() from public;
 grant execute on function public.qmr_is_admin() to authenticated;
 
--- Public visitors can only read active products. Admins can manage all products.
+-- Public visitors can read active products without needing execute permission
+-- on the private admin-check function. Authenticated admins can also read inactive products.
 drop policy if exists "Public read active products" on public.products;
-create policy "Public read active products" on public.products for select to anon, authenticated
-using (active = true or public.qmr_is_admin());
+drop policy if exists "Authenticated read active products and admins" on public.products;
+create policy "Public read active products" on public.products
+for select to anon using (active = true);
+create policy "Authenticated read active products and admins" on public.products
+for select to authenticated using (active = true or public.qmr_is_admin());
 drop policy if exists "Admins insert products" on public.products;
 create policy "Admins insert products" on public.products for insert to authenticated
 with check (public.qmr_is_admin());
@@ -97,10 +101,15 @@ with check (id = (select auth.uid()) and role = 'customer');
 drop policy if exists "No profile role changes" on public.profiles;
 create policy "No profile role changes" on public.profiles for update to authenticated
 using (false) with check (false);
-grant select, insert, update, delete on public.products to anon, authenticated;
-grant insert on public.orders to anon, authenticated;
-grant select, update, delete on public.orders to authenticated;
-grant select, insert, update on public.profiles to authenticated;
+-- Least-privilege table grants. RLS policies remain the primary row-level guard.
+revoke all privileges on table public.products from anon, authenticated;
+revoke all privileges on table public.orders from anon, authenticated;
+revoke all privileges on table public.profiles from anon, authenticated;
+grant select on table public.products to anon;
+grant select, insert, update, delete on table public.products to authenticated;
+grant insert on table public.orders to anon;
+grant select, insert, update, delete on table public.orders to authenticated;
+grant select, insert, update on table public.profiles to authenticated;
 
 -- Create a public image bucket with a 5MB limit. Only admins may upload/change/delete files.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
