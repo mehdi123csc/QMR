@@ -49,12 +49,6 @@ body{background:#fffdf9}
 @media(max-width:700px){.hero{padding:42px 6% 52px;gap:30px}.hero:before{inset:10px}.hero h1{font-size:clamp(39px,10vw,56px)}.hero-kicker{font-size:11px}.brand img{width:45px;height:45px}.brand span{font-size:25px}.hero-frame{height:350px}.hero-stamp{font-size:23px;padding:14px 18px}.announcement{font-size:10px;line-height:1.9;padding:7px 10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-/* Mobile navigation and product visibility fixes */
-.menu-toggle{position:relative;z-index:32;min-width:42px;min-height:42px;display:none;align-items:center;justify-content:center;touch-action:manipulation;color:var(--black)}
-.product-image{display:block;min-height:180px}
-.product-image img{display:block;width:100%;height:100%;min-height:180px;object-fit:cover}
-.product-info .add-to-cart{display:block;width:100%;margin-top:10px;padding:11px 8px;background:var(--black);color:white;border:0;font-size:12px}
-.product-info .add-to-cart:active{background:var(--gold);color:var(--black)}
-.store-error{grid-column:1/-1;padding:22px;text-align:center;background:#fff3ed;border:1px solid #e8c7b9;color:#8b3323;line-height:1.9}
-@media(max-width:900px){.menu-toggle{display:inline-flex}.site-header{position:sticky;z-index:50}.main-nav{display:none;position:absolute;top:100%;right:0;left:0;z-index:51;background:var(--paper);padding:20px 24px 24px;border-bottom:1px solid var(--line);flex-direction:column;gap:18px;box-shadow:0 10px 24px #0002}.main-nav.open{display:flex}.main-nav a{display:block;padding:8px 4px;min-height:38px}.cart-button{position:relative;z-index:32}}
-@media(max-width:650px){.site-header{height:66px}.main-nav{top:100%}.menu-toggle{font-size:29px}}
+/* Operational notice shown only when the live catalogue cannot be reached. */
+.connection-notice{margin:1rem auto;padding:.85rem 1rem;max-width:1200px;border:1px solid #b9854b;border-radius:10px;background:#fff8ee;color:#68451f;text-align:center;line-height:1.8}
+.connection-notice[hidden]{display:none}

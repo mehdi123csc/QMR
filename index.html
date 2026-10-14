@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11100e">
-  <meta name="description" content="Qmr — أزياء نسائية وبنات مختارة بذوق فاخر. تسوقي أحدث القطع مع الدفع عند الاستلام.">
+  <meta name="description" content="Qmr — أزياء نسائية وبنات مختارة بذوق فاخر. تسوقي أحدث القطع مع الدفع عند الاستلام داخل الجزائر.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Qmr | أزياء النساء والبنات">
+  <meta property="og:description" content="اكتشفي أزياء نسائية وبناتية مختارة بذوق فاخر من Qmr.">
+  <meta property="og:locale" content="ar_DZ">
   <title>Qmr | أزياء النساء والبنات</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
@@ -17,13 +22,14 @@
   <div class="announcement"><span class="announcement-star">✦</span> مرحبًا بكِ في Qmr — حيث تتحوّل الأناقة إلى حكاية <span class="announcement-star">✦</span> الدفع عند الاستلام داخل الجزائر</div>
   <header class="site-header">
     <button class="icon-btn menu-toggle" id="menuToggle" aria-label="فتح القائمة">☰</button>
-    <a class="brand" href="#home" aria-label="Qmr الصفحة الرئيسية"><img src="./qmr-logo.jpg" alt="شعار Qmr" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./assets/qmr-logo.jpg';}else{this.onerror=null;this.hidden=true;this.parentElement.classList.add('logo-fallback');}"><span>Qmr</span></a>
+    <a class="brand" href="#home" aria-label="Qmr الصفحة الرئيسية"><img src="assets/qmr-logo.jpg" alt="شعار Qmr" onerror="this.hidden=true;this.parentElement.classList.add(&quot;logo-fallback&quot;)"><span>Qmr</span></a>
     <nav id="mainNav" class="main-nav">
       <a href="#home">الرئيسية</a><a href="#women">ملابس النساء</a><a href="#girls">ملابس البنات</a><a href="#products">تسوقي الآن</a>
     </nav>
     <button class="cart-button" id="openCart" aria-label="فتح السلة">السلة <span id="cartCount">0</span></button>
   </header>
   <main>
+    <p id="connectionNotice" class="connection-notice" hidden>تعذر الاتصال بالمتجر الآن؛ قد تظهر منتجات تجريبية. لا يمكن استقبال الطلبات الحقيقية قبل إكمال إعداد Supabase.</p>
     <section class="hero" id="home">
       <div class="hero-copy">
         <p class="eyebrow">QMR • YOUR STYLE, YOUR MOON</p>
