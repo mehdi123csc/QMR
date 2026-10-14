@@ -69,9 +69,9 @@
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#imageLightbox").hidden){$("#imageLightbox").hidden=true;document.body.classList.remove("lightbox-open");$("#lightboxImage").src="";}});
   $("#year").textContent=new Date().getFullYear();
   $("#checkoutForm").addEventListener("submit",async e=>{
-    e.preventDefault(); const msg=$("#checkoutMessage");msg.textContent="";msg.style.color="#9a6a42";
+    e.preventDefault(); const checkoutForm=e.currentTarget; const msg=$("#checkoutMessage");msg.textContent="";msg.style.color="#9a6a42";
     if(!cart.length){msg.textContent="أضيفي منتجًا إلى السلة أولًا.";return;}
-    const form=new FormData(e.currentTarget), data=Object.fromEntries(form.entries());
+    const form=new FormData(checkoutForm), data=Object.fromEntries(form.entries());
     const phone=String(data.phone||"").replace(/[\s()-]/g,"");
     if(!/^\+?[0-9]{8,15}$/.test(phone)){msg.textContent="تحققي من رقم الهاتف، ثم حاولي مجددًا.";return;}
     const lines=cart.map(c=>{const p=products.find(x=>String(x.id)===String(c.id))||c.productSnapshot;return p?{product_id:String(p.id),name:String(p.name),price:Number(p.price),quantity:Number(c.qty)}:null}).filter(Boolean);
@@ -81,7 +81,7 @@
     try{
       if(supabase){
         const {error}=await supabase.from("orders").insert(order);if(error)throw error;
-        cart=[];persistCart();e.currentTarget.reset();msg.style.color="#42704d";msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده.";toast("تم إرسال الطلب بنجاح");
+        cart=[];persistCart();checkoutForm.reset();msg.style.color="#42704d";msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده.";toast("تم إرسال الطلب بنجاح");
       }else{
         msg.style.color="#a33";msg.textContent="لم يتم ربط قاعدة البيانات بعد؛ لم يُرسل الطلب. أكملي إعداد Supabase من ملف README قبل استقبال العملاء.";
       }
