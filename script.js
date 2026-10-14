@@ -20,6 +20,7 @@ let supabase = null;
 let products = [];
 let cart = loadCart();
 let isSubmitting = false;
+let activeCategory = "all";
 
 /* ---------- Cart storage ---------- */
 
@@ -87,6 +88,7 @@ function initSupabase() {
       config.key ||
       config.anonKey ||
       config.publishableKey ||
+      config.SUPABASE_ANON_KEY ||
       config.SUPABASE_KEY ||
       SUPABASE_PUBLIC_KEY;
 
@@ -122,7 +124,7 @@ function renderProducts(list = products) {
   const empty = $("#emptyProducts");
 
   if (!grid) {
-    console.error("QMR: #productGrid was not found in the HTML.");
+    console.error("QMR: #productGrid was not found in index.html.");
     return;
   }
 
@@ -136,35 +138,35 @@ function renderProducts(list = products) {
 
   grid.innerHTML = list.map(product => {
     const id = escapeHTML(productId(product));
-    const name = escapeHTML(product.name || "Produit");
+    const name = escapeHTML(product.name || "منتج Qmr");
     const description = escapeHTML(product.description || "");
     const price = productPrice(product);
+    const oldPrice = product.old_price == null ? null : Number(product.old_price);
     const image = productImage(product);
+    const tag = product.category === "girls" ? "البنات" : "النساء";
 
     return `
       <article class="product-card">
         <div class="product-image">
           ${
             image
-              ? `<img src="${escapeHTML(image)}"
-                      alt="${name}"
-                      loading="lazy"
-                      onerror="this.style.display='none'">`
-              : `<div class="product-image-placeholder">QMR</div>`
+              ? `<img src="${escapeHTML(image)}" alt="${name}" loading="lazy"
+                      onerror="this.onerror=null;this.style.display='none'">`
+              : `<div class="product-image-placeholder">Qmr</div>`
           }
+          <span class="product-tag">${tag}</span>
+          <button type="button" class="add-button" data-add-to-cart="${id}">
+            أضيفي إلى السلة
+          </button>
         </div>
-
         <div class="product-info">
           <h3>${name}</h3>
           ${description ? `<p>${description}</p>` : ""}
-          <p class="product-price">${money(price)}</p>
-
-          <button
-            type="button"
-            class="add-to-cart"
-            data-add-to-cart="${id}">
-            Ajouter au panier
-          </button>
+          <div class="price">
+            ${money(price)}
+            ${oldPrice !== null && Number.isFinite(oldPrice) && oldPrice > price
+              ? `<span class="old-price">${money(oldPrice)}</span>` : ""}
+          </div>
         </div>
       </article>
     `;
@@ -173,14 +175,13 @@ function renderProducts(list = products) {
 
 async function loadProducts() {
   const grid = $("#productGrid");
-
-  if (grid) {
-    grid.setAttribute("aria-busy", "true");
-  }
+  if (grid) grid.setAttribute("aria-busy", "true");
 
   try {
     if (!supabase) {
-      throw new Error("Connexion Supabase indisponible.");
+      throw new Error(
+        "Supabase غير متصل. تحقّق من config.js ومن تحميل مكتبة Supabase."
+      );
     }
 
     const { data, error } = await supabase
@@ -192,17 +193,19 @@ async function loadProducts() {
     if (error) throw error;
 
     products = Array.isArray(data) ? data : [];
-    renderProducts();
+    filterProducts();
+    renderCart();
+
+    console.info(`QMR: loaded ${products.length} active products.`);
   } catch (error) {
     console.error("QMR product loading error:", error);
-
     products = [];
-    renderProducts();
+    renderProducts([]);
 
     if (grid) {
       grid.innerHTML = `
-        <p class="store-error">
-          تعذر تحميل المنتجات. تحقّق من الاتصال بقاعدة البيانات.
+        <p class="loading-state">
+          تعذر تحميل المنتجات. ${escapeHTML(error?.message || "تحقّق من إعدادات Supabase.")}
         </p>
       `;
     }
@@ -241,31 +244,25 @@ function renderCart() {
 
   if (container) {
     if (!details.length) {
-      container.innerHTML = "<p>السلة فارغة.</p>";
+      container.innerHTML = '<p class="hint">السلة فارغة.</p>';
     } else {
       container.innerHTML = details.map(({ product, quantity, subtotal }) => `
-        <div class="cart-item">
-          <div class="cart-item-info">
-            <strong>${escapeHTML(product.name)}</strong>
+        <div class="cart-line">
+          ${
+            productImage(product)
+              ? `<img src="${escapeHTML(productImage(product))}" alt="${escapeHTML(product.name)}" loading="lazy">`
+              : `<div class="cart-image-placeholder">Qmr</div>`
+          }
+          <div>
+            <h4>${escapeHTML(product.name)}</h4>
             <p>${money(productPrice(product))}</p>
-          </div>
-
-          <div class="cart-item-actions">
-            <button type="button"
-                    data-cart-minus="${escapeHTML(productId(product))}"
-                    aria-label="تقليل الكمية">−</button>
-
-            <span>${quantity}</span>
-
-            <button type="button"
-                    data-cart-plus="${escapeHTML(productId(product))}"
-                    aria-label="زيادة الكمية">+</button>
-
-            <strong>${money(subtotal)}</strong>
-
-            <button type="button"
-                    data-cart-remove="${escapeHTML(productId(product))}"
-                    aria-label="حذف المنتج">حذف</button>
+            <div class="quantity">
+              <button type="button" data-cart-minus="${escapeHTML(productId(product))}" aria-label="تقليل الكمية">−</button>
+              <span>${quantity}</span>
+              <button type="button" data-cart-plus="${escapeHTML(productId(product))}" aria-label="زيادة الكمية">+</button>
+              <strong>${money(subtotal)}</strong>
+            </div>
+            <button type="button" class="remove-item" data-cart-remove="${escapeHTML(productId(product))}">حذف</button>
           </div>
         </div>
       `).join("");
@@ -273,16 +270,13 @@ function renderCart() {
   }
 
   const total = details.reduce((sum, item) => sum + item.subtotal, 0);
-
   if (totalElement) totalElement.textContent = money(total);
 
   const count = cart.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.qty) || 0),
-    0
+    (sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0
   );
-
-  $$("[data-cart-count], #cartCount, .cart-count").forEach(element => {
-    element.textContent = String(count);
+  $$("#cartCount, [data-cart-count], .cart-count").forEach(el => {
+    el.textContent = String(count);
   });
 
   saveCart();
@@ -345,42 +339,27 @@ function closeCart() {
 /* ---------- Product filtering ---------- */
 
 function filterProducts() {
-  const searchInput = $(
-    "#searchInput, #productSearch, [data-product-search]"
-  );
-
-  const categoryInput = $(
-    "#categoryFilter, #productCategory, [data-category-filter]"
-  );
-
-  const search = String(searchInput?.value || "")
-    .trim()
-    .toLowerCase();
-
-  const category = String(categoryInput?.value || "")
-    .trim()
-    .toLowerCase();
+  const searchInput = $("#searchInput, #productSearch, [data-product-search]");
+  const search = String(searchInput?.value || "").trim().toLowerCase();
 
   const filtered = products.filter(product => {
     const name = String(product.name || "").toLowerCase();
     const description = String(product.description || "").toLowerCase();
-    const productCategory = String(product.category || "").toLowerCase();
+    const category = String(product.category || "").toLowerCase();
 
     const matchesSearch =
-      !search ||
-      name.includes(search) ||
-      description.includes(search);
-
+      !search || name.includes(search) || description.includes(search);
     const matchesCategory =
-      !category ||
-      category === "all" ||
-      category === "tous" ||
-      productCategory === category;
+      activeCategory === "all" || category === activeCategory;
 
     return matchesSearch && matchesCategory;
   });
 
   renderProducts(filtered);
+
+  $$("[data-filter]").forEach(button => {
+    button.classList.toggle("active", button.dataset.filter === activeCategory);
+  });
 }
 
 /* ---------- Checkout validation ---------- */
@@ -554,6 +533,13 @@ function setupEvents() {
   });
 
   document.addEventListener("click", event => {
+    const filterButton = event.target.closest("[data-filter]");
+    if (filterButton) {
+      activeCategory = filterButton.dataset.filter || "all";
+      filterProducts();
+      return;
+    }
+
     const addButton = event.target.closest("[data-add-to-cart]");
     if (addButton) {
       addToCart(addButton.dataset.addToCart);
