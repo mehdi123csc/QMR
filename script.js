@@ -39,7 +39,7 @@
   function renderProducts(){
     const grid=$("#productGrid"); if(!grid)return;
     const visible=products.filter(p=>p.active!==false && (filter==="all"||p.category===filter));
-    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img loading="lazy" src="${safe(p.image_url||"assets/qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button class="add-button" data-add="${safe(p.id)}">أضيفي إلى السلة +</button></div><div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
+    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img data-product-image="${safe(p.id)}" loading="lazy" src="${safe(p.image_url||"assets/qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button class="add-button" data-add="${safe(p.id)}">أضيفي إلى السلة +</button></div><div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
     $("#emptyProducts").hidden=visible.length>0;
     if(!visible.length) grid.innerHTML="";
   }
@@ -54,6 +54,8 @@
   }
   function addProduct(id){ const p=products.find(x=>String(x.id)===String(id));if(!p)return;const item=cart.find(x=>String(x.id)===String(id));if(item){if(item.qty>=99){toast("الحد الأقصى للكمية هو 99");return;}item.qty++;}else cart.push({id:p.id,qty:1,productSnapshot:p});persistCart();toast("أُضيف المنتج إلى سلتك"); }
   document.addEventListener("click", e=>{
+    const productImage=e.target.closest("[data-product-image]");
+    if(productImage){const p=products.find(x=>String(x.id)===String(productImage.dataset.productImage));if(p){const modal=$("#imageLightbox");$("#lightboxImage").src=p.image_url||"assets/qmr-logo.jpg";$("#lightboxImage").alt=p.name||"صورة المنتج";$("#lightboxCaption").textContent=`${p.name||"المنتج"} — ${money(p.price)}`;modal.hidden=false;document.body.classList.add("lightbox-open");}return;}
     const add=e.target.closest("[data-add]"); if(add){addProduct(add.dataset.add);return;}
     const qty=e.target.closest("[data-qty]");if(qty){const item=cart.find(x=>String(x.id)===String(qty.dataset.qty));if(item){item.qty+=Number(qty.dataset.delta);if(item.qty<1)cart=cart.filter(x=>x!==item);else item.qty=Math.min(99,item.qty);persistCart();}return;}
     const remove=e.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>String(x.id)!==String(remove.dataset.remove));persistCart();return;}
@@ -62,6 +64,9 @@
   $("#openCart").addEventListener("click",openCart);$("#closeCart").addEventListener("click",closeCart);$("#cartOverlay").addEventListener("click",closeCart);
   $("#menuToggle").addEventListener("click",()=>$("#mainNav").classList.toggle("open"));
   $("#mainNav").addEventListener("click",e=>{if(e.target.closest("a"))$("#mainNav").classList.remove("open")});
+  $("#closeLightbox").addEventListener("click",()=>{ $("#imageLightbox").hidden=true;document.body.classList.remove("lightbox-open");$("#lightboxImage").src=""; });
+  $("#imageLightbox").addEventListener("click",e=>{if(e.target.id==="imageLightbox"){$("#imageLightbox").hidden=true;document.body.classList.remove("lightbox-open");$("#lightboxImage").src="";}});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#imageLightbox").hidden){$("#imageLightbox").hidden=true;document.body.classList.remove("lightbox-open");$("#lightboxImage").src="";}});
   $("#year").textContent=new Date().getFullYear();
   $("#checkoutForm").addEventListener("submit",async e=>{
     e.preventDefault(); const msg=$("#checkoutMessage");msg.textContent="";msg.style.color="#9a6a42";
@@ -80,7 +85,13 @@
       }else{
         msg.style.color="#a33";msg.textContent="لم يتم ربط قاعدة البيانات بعد؛ لم يُرسل الطلب. أكملي إعداد Supabase من ملف README قبل استقبال العملاء.";
       }
-    }catch(err){console.error(err);msg.style.color="#a33";msg.textContent="تعذر إرسال الطلب. تحققي من الاتصال وإعدادات قاعدة البيانات ثم أعيدي المحاولة."}
+    }catch(err){console.error("Qmr checkout error:",err);msg.style.color="#a33";
+      const code=String(err?.code||"");
+      if(!navigator.onLine) msg.textContent="لا يوجد اتصال بالإنترنت. تحققي من الاتصال ثم أعيدي إرسال الطلب.";
+      else if(code==="42501"||/row-level security|permission denied/i.test(String(err?.message||""))) msg.textContent="إعدادات استقبال الطلبات في قاعدة البيانات تمنع الإرسال. يلزم مراجعة سياسة Visitors create orders في Supabase.";
+      else if(code==="23514"||code==="23502"||code==="22P02") msg.textContent="بعض بيانات الطلب غير مقبولة. راجعي الاسم ورقم الهاتف والولاية والعنوان ثم أعيدي المحاولة.";
+      else msg.textContent="تعذر إرسال الطلب. لم يتم تأكيده؛ حاولي مجددًا بعد التأكد من الاتصال. إذا تكررت المشكلة، أرسلي للمسؤول رمز الخطأ: "+(code||"غير متوفر");
+    }
     finally{submit.disabled=false;submit.textContent="تأكيد الطلب — الدفع عند الاستلام";}
   });
   loadProducts().then(renderCart);

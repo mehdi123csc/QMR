@@ -52,3 +52,12 @@ body{background:#fffdf9}
 /* Operational notice shown only when the live catalogue cannot be reached. */
 .connection-notice{margin:1rem auto;padding:.85rem 1rem;max-width:1200px;border:1px solid #b9854b;border-radius:10px;background:#fff8ee;color:#68451f;text-align:center;line-height:1.8}
 .connection-notice[hidden]{display:none}
+
+/* Click-to-enlarge product images */
+.product-image img{cursor:zoom-in}
+.image-lightbox[hidden]{display:none!important}
+.image-lightbox{position:fixed;z-index:9999;inset:0;background:rgba(12,11,9,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;gap:14px}
+.image-lightbox img{display:block;max-width:min(94vw,900px);max-height:78vh;object-fit:contain;border-radius:8px;box-shadow:0 12px 50px #0008;background:#fff}
+.lightbox-close{position:absolute;top:14px;right:18px;width:46px;height:46px;border:1px solid #d6bd7c;border-radius:50%;background:#171511;color:#f4dfaa;font-size:32px;line-height:1;cursor:pointer}
+.lightbox-caption{color:#fff5dd;text-align:center;font-size:16px;line-height:1.7}
+body.lightbox-open{overflow:hidden}
