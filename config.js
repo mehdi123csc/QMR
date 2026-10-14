@@ -1,7 +1,5 @@
-/* Optional Supabase setup.
-   Paste your project's URL and PUBLIC anon/publishable key here.
-   NEVER put a service_role/secret key in this file. */
+
 window.QMR_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: ""
+  SUPABASE_URL: "https://awdreoevykuqouehbnkc.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_pnPpAOR_2boEZ510v7rmyA_hdD_h1Se"
 };
