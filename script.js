@@ -96,7 +96,10 @@
     try{
       if(supabase){
         const {data:placed,error}=await supabase.rpc("qmr_place_order",{p_order:order,p_coupon_code:order.coupon_code||null});if(error)throw error;if(placed?.error)throw new Error(placed.error);if(placed?.success===false)throw new Error(placed.message||"تعذر تأكيد الطلب");
-        cart=[];appliedCoupon=null;persistCart();checkoutForm.reset();msg.style.color="#42704d";msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده.";toast("تم إرسال الطلب بنجاح");
+        cart=[];appliedCoupon=null;persistCart();checkoutForm.reset();msg.style.color="#42704d";
+        if(placed?.order_id&&placed?.tracking_token){msg.innerHTML=`تم استلام طلبك بنجاح! <br>رقم الطلب: <strong>${safe(placed.order_id)}</strong><br>رمز التتبّع الخاص بك: <strong>${safe(placed.tracking_token)}</strong><br><small>احتفظي بالرقم والرمز؛ لن نعرض رمز التتبّع مرة أخرى. يمكنك استعمالهما في قسم «تتبّعي طلبك».</small>`;}
+        else msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده. احتفظي برقم الطلب إن ظهر.";
+        toast("تم إرسال الطلب بنجاح");
       }else{
         msg.style.color="#a33";msg.textContent="لم يتم ربط قاعدة البيانات بعد؛ لم يُرسل الطلب. أكملي إعداد Supabase من ملف README قبل استقبال العملاء.";
       }
@@ -128,6 +131,23 @@
     }catch(e){console.warn("Algerian locality list could not be loaded; allowing manual entry.");const input=document.createElement("input");input.id="municipalityInput";input.name="municipality";input.required=true;input.maxLength=100;input.placeholder="اكتبي اسم البلدية";municipalitySelect.replaceWith(input);}
   }
   loadAlgerianLocalities();
+
+  const trackingForm=$("#trackingForm");
+  trackingForm?.addEventListener("submit",async e=>{
+    e.preventDefault();const msg=$("#trackingMessage"),result=$("#trackingResult"),btn=trackingForm.querySelector('button[type="submit"]');
+    result.hidden=true;result.textContent="";msg.style.color="#9a6a42";msg.textContent="جارٍ البحث عن حالة الطلب...";btn.disabled=true;
+    const fd=new FormData(trackingForm),orderId=String(fd.get("order_id")||"").trim(),token=String(fd.get("tracking_token")||"").trim();
+    if(!supabase){msg.textContent="خدمة التتبّع غير متاحة حاليًا.";btn.disabled=false;return;}
+    try{
+      const {data,error}=await supabase.rpc("qmr_track_order",{p_order_id:orderId,p_tracking_token:token});
+      if(error)throw error;
+      if(!data||data.found!==true){msg.style.color="#9a453a";msg.textContent="لم نعثر على طلب مطابق. تحققي من رقم الطلب ورمز التتبّع.";return;}
+      const labels={new:"طلب جديد",confirmed:"تم تأكيد الطلب",preparing:"قيد التحضير",shipped:"تم الشحن",delivered:"تم التسليم",cancelled:"ملغي"};
+      result.innerHTML=`<p>حالة طلبك: <span class="tracking-status">${safe(labels[data.status]||"قيد المعالجة")}</span></p><p>رقم الطلب: <strong>${safe(data.order_reference||"")}</strong></p><p>تاريخ الطلب: ${safe(data.created_at?new Date(data.created_at).toLocaleString("fr-DZ"):"—")}</p>`;
+      result.hidden=false;msg.textContent="تم العثور على طلبك.";msg.style.color="#42704d";
+    }catch(err){console.error("Qmr tracking error:",err);msg.style.color="#9a453a";msg.textContent="تعذر التحقّق من الطلب الآن. تأكدي من تشغيل تحديث المرحلة الثانية في Supabase ثم أعيدي المحاولة.";}
+    finally{btn.disabled=false;}
+  });
   $("#applyCoupon")?.addEventListener("click",async()=>{const code=$("#couponCode").value.trim().toUpperCase(),msg=$("#couponMessage");msg.textContent="";if(!code){appliedCoupon=null;renderCart();msg.textContent="أدخلي رمز الكوبون.";return;}if(!supabase){msg.textContent="تعذر التحقق من الكوبون دون الاتصال بقاعدة البيانات.";return;}const subtotal=cart.reduce((sum,c)=>{const p=products.find(x=>String(x.id)===String(c.id))||c.productSnapshot;return sum+(Number(p?.price)||0)*Number(c.qty||0)},0);try{const {data,error}=await supabase.rpc("qmr_preview_coupon",{p_code:code,p_subtotal:subtotal});if(error)throw error;if(!data?.valid)throw new Error(data?.message||"الكوبون غير صالح أو منتهي الصلاحية.");appliedCoupon={code,discount_type:data.discount_type,discount_value:Number(data.discount_value)};renderCart();msg.textContent="تم تطبيق الكوبون. سيُعاد التحقق منه عند تأكيد الطلب.";msg.style.color="#42704d";}catch(err){appliedCoupon=null;renderCart();msg.textContent=err.message||"تعذر التحقق من الكوبون.";msg.style.color="#9a453a";}});
   $("#couponCode")?.addEventListener("input",()=>{appliedCoupon=null;renderCart();$("#couponMessage").textContent="";});
 
