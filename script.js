@@ -13,7 +13,7 @@
     {id:"demo-7",name:"قميص أنيق",category:"women",price:3100,description:"يناسب إطلالات متعددة",image_url:"https://images.unsplash.com/photo-1598554747436-c9293d6a588f?auto=format&fit=crop&w=700&q=80",active:true},
     {id:"demo-8",name:"فستان يومي للبنات",category:"girls",price:2800,description:"تصميم لطيف وسهل التنسيق",image_url:"https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=700&q=80",active:true}
   ];
-  let products = [...demoProducts], filter = "all", supabase = null;
+  let products = [...demoProducts], filter = "all", supabase = null, appliedCoupon = null;
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem("qmr-cart") || "[]");
@@ -31,7 +31,7 @@
   }
   async function loadProducts(){
     if(supabase){
-      try { const {data,error}=await supabase.from("products").select("id,name,category,price,old_price,description,image_url,active").eq("active",true).order("created_at",{ascending:false}); if(error) throw error; products=data||[]; }
+      try { const {data,error}=await supabase.from("products").select("id,name,category,price,old_price,description,image_url,images,stock_quantity,active").eq("active",true).order("created_at",{ascending:false}); if(error) throw error; products=data||[]; }
       catch(e){ console.warn("Products could not be loaded from Supabase; showing sample products.",e.message); products=[...demoProducts]; const notice=$("#connectionNotice"); if(notice) notice.hidden=false; }
     }
     renderProducts();
@@ -39,25 +39,27 @@
   function renderProducts(){
     const grid=$("#productGrid"); if(!grid)return;
     const visible=products.filter(p=>p.active!==false && (filter==="all"||p.category===filter));
-    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img data-product-image="${safe(p.id)}" loading="lazy" src="${safe(p.image_url||"assets/qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button class="add-button" data-add="${safe(p.id)}">أضيفي إلى السلة +</button></div><div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
+    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img id="productMain-${safe(p.id)}" data-product-image="${safe(p.id)}" loading="lazy" src="${safe(p.image_url||"qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button class="add-button" data-add="${safe(p.id)}" ${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"disabled":""}>${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"نفد المخزون":"أضيفي إلى السلة +"}</button></div>${Array.isArray(p.images)&&p.images.filter(u=>u&&u!==p.image_url).length?`<div class="product-thumbs">${p.images.filter(u=>u&&u!==p.image_url).slice(0,3).map((u,i)=>`<button type="button" data-gallery-image="${safe(p.id)}" data-image-url="${safe(u)}" aria-label="صورة إضافية ${i+1}"><img loading="lazy" src="${safe(u)}" alt=""></button>`).join("")}</div>`:""}<div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
     $("#emptyProducts").hidden=visible.length>0;
     if(!visible.length) grid.innerHTML="";
   }
   function openCart(){ $("#cartDrawer").classList.add("open");$("#cartOverlay").classList.add("show");$("#cartDrawer").setAttribute("aria-hidden","false");document.body.classList.add("no-scroll"); }
   function closeCart(){ $("#cartDrawer").classList.remove("open");$("#cartOverlay").classList.remove("show");$("#cartDrawer").setAttribute("aria-hidden","true");document.body.classList.remove("no-scroll"); }
+  function calcDiscount(subtotal){if(!appliedCoupon)return 0;const v=Number(appliedCoupon.discount_value)||0;return Math.min(subtotal,appliedCoupon.discount_type==="percent"?subtotal*Math.min(100,v)/100:v);}
   function renderCart(){
     const items=$("#cartItems"); if(!items)return;
     const enriched=cart.map(c=>({...c,qty:Math.max(1,Math.min(99,Number(c.qty)||1)),product:products.find(p=>String(p.id)===String(c.id))||c.productSnapshot||demoProducts.find(p=>p.id===c.id)})).filter(c=>c.product);
     $("#cartCount").textContent=cart.reduce((n,c)=>n+Number(c.qty||0),0);
-    items.innerHTML=enriched.length?enriched.map(c=>`<div class="cart-line"><img src="${safe(c.product.image_url||"assets/qmr-logo.jpg")}" alt=""><div><h4>${safe(c.product.name)}</h4><p>${money(c.product.price)}</p><div class="quantity"><button data-qty="${safe(c.id)}" data-delta="-1" aria-label="تقليل الكمية">−</button><span>${c.qty}</span><button data-qty="${safe(c.id)}" data-delta="1" aria-label="زيادة الكمية">+</button></div></div><button class="remove-item" data-remove="${safe(c.id)}" aria-label="حذف المنتج">حذف</button></div>`).join(""):`<p class="loading-state">سلتك فارغة حاليًا. اختاري قطعة تحبينها.</p>`;
-    const total=enriched.reduce((sum,c)=>sum+Number(c.product.price||0)*c.qty,0); $("#cartTotal").textContent=money(total);
+    items.innerHTML=enriched.length?enriched.map(c=>`<div class="cart-line"><img src="${safe(c.product.image_url||"qmr-logo.jpg")}" alt=""><div><h4>${safe(c.product.name)}</h4><p>${money(c.product.price)}</p><div class="quantity"><button data-qty="${safe(c.id)}" data-delta="-1" aria-label="تقليل الكمية">−</button><span>${c.qty}</span><button data-qty="${safe(c.id)}" data-delta="1" aria-label="زيادة الكمية">+</button></div></div><button class="remove-item" data-remove="${safe(c.id)}" aria-label="حذف المنتج">حذف</button></div>`).join(""):`<p class="loading-state">سلتك فارغة حاليًا. اختاري قطعة تحبينها.</p>`;
+    const total=enriched.reduce((sum,c)=>sum+Number(c.product.price||0)*c.qty,0);const discount=calcDiscount(total);$("#cartSubtotal").textContent=money(total);$("#cartDiscount").textContent="−"+money(discount);$("#discountRow").hidden=discount<=0;$("#cartTotal").textContent=money(Math.max(0,total-discount));
   }
-  function addProduct(id){ const p=products.find(x=>String(x.id)===String(id));if(!p)return;const item=cart.find(x=>String(x.id)===String(id));if(item){if(item.qty>=99){toast("الحد الأقصى للكمية هو 99");return;}item.qty++;}else cart.push({id:p.id,qty:1,productSnapshot:p});persistCart();toast("أُضيف المنتج إلى سلتك"); }
+  function addProduct(id){ const p=products.find(x=>String(x.id)===String(id));if(!p)return;if(Number.isFinite(Number(p.stock_quantity))&&cart.find(x=>String(x.id)===String(id))?.qty>=Number(p.stock_quantity)){toast("الكمية المتوفرة في المخزون غير كافية");return;}if(Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0){toast("هذا المنتج غير متوفر حاليًا");return;}const item=cart.find(x=>String(x.id)===String(id));if(item){if(item.qty>=99){toast("الحد الأقصى للكمية هو 99");return;}const p=products.find(x=>String(x.id)===String(id));if(p&&Number.isFinite(Number(p.stock_quantity))&&item.qty>=Number(p.stock_quantity)){toast("الكمية المتوفرة في المخزون غير كافية");return;}item.qty++;}else cart.push({id:p.id,qty:1,productSnapshot:p});persistCart();toast("أُضيف المنتج إلى سلتك"); }
   document.addEventListener("click", e=>{
+    const galleryThumb=e.target.closest("[data-gallery-image]");if(galleryThumb){const main=$("#productMain-"+CSS.escape(galleryThumb.dataset.galleryImage));if(main)main.src=galleryThumb.dataset.imageUrl;return;}
     const productImage=e.target.closest("[data-product-image]");
-    if(productImage){const p=products.find(x=>String(x.id)===String(productImage.dataset.productImage));if(p){const modal=$("#imageLightbox");$("#lightboxImage").src=p.image_url||"assets/qmr-logo.jpg";$("#lightboxImage").alt=p.name||"صورة المنتج";$("#lightboxCaption").textContent=`${p.name||"المنتج"} — ${money(p.price)}`;modal.hidden=false;document.body.classList.add("lightbox-open");}return;}
+    if(productImage){const p=products.find(x=>String(x.id)===String(productImage.dataset.productImage));if(p){const modal=$("#imageLightbox");$("#lightboxImage").src=productImage.src||p.image_url||"qmr-logo.jpg";$("#lightboxImage").alt=p.name||"صورة المنتج";$("#lightboxCaption").textContent=`${p.name||"المنتج"} — ${money(p.price)}`;modal.hidden=false;document.body.classList.add("lightbox-open");}return;}
     const add=e.target.closest("[data-add]"); if(add){addProduct(add.dataset.add);return;}
-    const qty=e.target.closest("[data-qty]");if(qty){const item=cart.find(x=>String(x.id)===String(qty.dataset.qty));if(item){item.qty+=Number(qty.dataset.delta);if(item.qty<1)cart=cart.filter(x=>x!==item);else item.qty=Math.min(99,item.qty);persistCart();}return;}
+    const qty=e.target.closest("[data-qty]");if(qty){const item=cart.find(x=>String(x.id)===String(qty.dataset.qty));if(item){const delta=Number(qty.dataset.delta);const product=products.find(x=>String(x.id)===String(item.id));if(delta>0&&product&&Number.isFinite(Number(product.stock_quantity))&&item.qty>=Number(product.stock_quantity)){toast("الكمية المتوفرة في المخزون غير كافية");return;}item.qty+=delta;if(item.qty<1)cart=cart.filter(x=>x!==item);else item.qty=Math.min(99,item.qty);persistCart();}return;}
     const remove=e.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>String(x.id)!==String(remove.dataset.remove));persistCart();return;}
     const f=e.target.closest("[data-filter]");if(f){filter=f.dataset.filter;document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b===f));renderProducts();}
   });
@@ -72,27 +74,50 @@
     e.preventDefault(); const checkoutForm=e.currentTarget; const msg=$("#checkoutMessage");msg.textContent="";msg.style.color="#9a6a42";
     if(!cart.length){msg.textContent="أضيفي منتجًا إلى السلة أولًا.";return;}
     const form=new FormData(checkoutForm), data=Object.fromEntries(form.entries());
+    if(String(data.coupon_code||"").trim()&&!appliedCoupon){msg.textContent="اضغطي «تطبيق» للتحقق من كوبون التخفيض قبل تأكيد الطلب.";return;}
     const phone=String(data.phone||"").replace(/[\s()-]/g,"");
     if(!/^\+?[0-9]{8,15}$/.test(phone)){msg.textContent="تحققي من رقم الهاتف، ثم حاولي مجددًا.";return;}
     const lines=cart.map(c=>{const p=products.find(x=>String(x.id)===String(c.id))||c.productSnapshot;return p?{product_id:String(p.id),name:String(p.name),price:Number(p.price),quantity:Number(c.qty)}:null}).filter(Boolean);
-    const total=lines.reduce((s,p)=>s+p.price*p.quantity,0);
-    const order={customer_name:String(data.customer_name).trim(),phone,wilaya:String(data.wilaya).trim(),address:String(data.address).trim(),notes:String(data.notes||"").trim(),items:lines,total,status:"new",payment_method:"cash_on_delivery"};
+    const subtotal=lines.reduce((s,p)=>s+p.price*p.quantity,0);const total=Math.max(0,subtotal-calcDiscount(subtotal));
+    const order={customer_name:String(data.customer_name).trim(),phone,wilaya:String(data.wilaya).trim(),municipality:String(data.municipality||"").trim(),address:String(data.address).trim(),coupon_code:appliedCoupon?.code||"",notes:String(data.notes||"").trim(),items:lines,total,status:"new",payment_method:"cash_on_delivery"};
     const submit=e.currentTarget.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent="جارٍ إرسال الطلب...";
     try{
       if(supabase){
-        const {error}=await supabase.from("orders").insert(order);if(error)throw error;
-        cart=[];persistCart();checkoutForm.reset();msg.style.color="#42704d";msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده.";toast("تم إرسال الطلب بنجاح");
+        const {data:placed,error}=await supabase.rpc("qmr_place_order",{p_order:order,p_coupon_code:order.coupon_code||null});if(error)throw error;if(placed?.error)throw new Error(placed.error);if(placed?.success===false)throw new Error(placed.message||"تعذر تأكيد الطلب");
+        cart=[];appliedCoupon=null;persistCart();checkoutForm.reset();msg.style.color="#42704d";msg.textContent="تم استلام طلبك بنجاح! سنتواصل معك لتأكيده.";toast("تم إرسال الطلب بنجاح");
       }else{
         msg.style.color="#a33";msg.textContent="لم يتم ربط قاعدة البيانات بعد؛ لم يُرسل الطلب. أكملي إعداد Supabase من ملف README قبل استقبال العملاء.";
       }
     }catch(err){console.error("Qmr checkout error:",err);msg.style.color="#a33";
       const code=String(err?.code||"");
       if(!navigator.onLine) msg.textContent="لا يوجد اتصال بالإنترنت. تحققي من الاتصال ثم أعيدي إرسال الطلب.";
+      else if(/qmr_place_order|function.*does not exist/i.test(String(err?.message||""))) msg.textContent="يلزم تشغيل ملف supabase-global-upgrade.sql في Supabase أولًا لتفعيل التحقق الآمن من المخزون والكوبونات.";
+      else if(/coupon|كوبون|stock|مخزون|نفد/i.test(String(err?.message||""))) msg.textContent=err.message;
       else if(code==="42501"||/row-level security|permission denied/i.test(String(err?.message||""))) msg.textContent="إعدادات استقبال الطلبات في قاعدة البيانات تمنع الإرسال. يلزم مراجعة سياسة Visitors create orders في Supabase.";
       else if(code==="23514"||code==="23502"||code==="22P02") msg.textContent="بعض بيانات الطلب غير مقبولة. راجعي الاسم ورقم الهاتف والولاية والعنوان ثم أعيدي المحاولة.";
       else msg.textContent="تعذر إرسال الطلب. لم يتم تأكيده؛ حاولي مجددًا بعد التأكد من الاتصال. إذا تكررت المشكلة، أرسلي للمسؤول رمز الخطأ: "+(code||"غير متوفر");
     }
     finally{submit.disabled=false;submit.textContent="تأكيد الطلب — الدفع عند الاستلام";}
   });
+
+  const algerianWilayas=["أدرار","الشلف","الأغواط","أم البواقي","باتنة","بجاية","بسكرة","بشار","البليدة","البويرة","تمنراست","تبسة","تلمسان","تيارت","تيزي وزو","الجزائر","الجلفة","جيجل","سطيف","سعيدة","سكيكدة","سيدي بلعباس","عنابة","قالمة","قسنطينة","المدية","مستغانم","المسيلة","معسكر","ورقلة","وهران","البيض","إليزي","برج بوعريريج","بومرداس","الطارف","تندوف","تيسمسيلت","الوادي","خنشلة","سوق أهراس","تيبازة","ميلة","عين الدفلى","النعامة","عين تموشنت","غرداية","غليزان","تيميمون","برج باجي مختار","أولاد جلال","بني عباس","عين صالح","عين قزام","تقرت","جانت","المغير","المنيعة"];
+  const wilayaSelect=$("#wilayaSelect"), municipalitySelect=$("#municipalityInput");
+  if(wilayaSelect)wilayaSelect.innerHTML='<option value="">اختاري الولاية</option>'+algerianWilayas.map(w=>`<option value="${safe(w)}">${safe(w)}</option>`).join("");
+  let localityRows=[];
+  async function loadAlgerianLocalities(){
+    if(!wilayaSelect||!municipalitySelect)return;
+    try{
+      const res=await fetch("https://raw.githubusercontent.com/wadiemendja/algeria-communes-wilayas/main/algeria-communes-69-wilayas.json",{cache:"force-cache"});if(!res.ok)throw new Error("locality data unavailable");
+      const rows=await res.json();if(!Array.isArray(rows)||rows.length<1000)throw new Error("locality data invalid");localityRows=rows;
+      const wilayas=[...new Map(rows.map(r=>[r.wilaya_code,r])).values()].sort((a,b)=>Number(a.wilaya_code)-Number(b.wilaya_code));
+      wilayaSelect.innerHTML='<option value="">اختاري الولاية</option>'+wilayas.map(w=>`<option value="${safe(w.wilaya_name)}" data-code="${safe(w.wilaya_code)}">${safe(w.wilaya_code)} — ${safe(w.wilaya_name)}</option>`).join("");
+      municipalitySelect.disabled=true;municipalitySelect.innerHTML='<option value="">اختاري الولاية أولًا</option>';
+      wilayaSelect.addEventListener("change",()=>{const code=wilayaSelect.selectedOptions[0]?.dataset.code||"";const towns=localityRows.filter(r=>r.wilaya_code===code).sort((a,b)=>a.commune_name.localeCompare(b.commune_name,"ar"));municipalitySelect.innerHTML='<option value="">اختاري البلدية</option>'+towns.map(t=>`<option value="${safe(t.commune_name)}">${safe(t.commune_name)}</option>`).join("");municipalitySelect.disabled=!code||!towns.length;});
+    }catch(e){console.warn("Algerian locality list could not be loaded; allowing manual entry.");const input=document.createElement("input");input.id="municipalityInput";input.name="municipality";input.required=true;input.maxLength=100;input.placeholder="اكتبي اسم البلدية";municipalitySelect.replaceWith(input);}
+  }
+  loadAlgerianLocalities();
+  $("#applyCoupon")?.addEventListener("click",async()=>{const code=$("#couponCode").value.trim().toUpperCase(),msg=$("#couponMessage");msg.textContent="";if(!code){appliedCoupon=null;renderCart();msg.textContent="أدخلي رمز الكوبون.";return;}if(!supabase){msg.textContent="تعذر التحقق من الكوبون دون الاتصال بقاعدة البيانات.";return;}const subtotal=cart.reduce((sum,c)=>{const p=products.find(x=>String(x.id)===String(c.id))||c.productSnapshot;return sum+(Number(p?.price)||0)*Number(c.qty||0)},0);try{const {data,error}=await supabase.rpc("qmr_preview_coupon",{p_code:code,p_subtotal:subtotal});if(error)throw error;if(!data?.valid)throw new Error(data?.message||"الكوبون غير صالح أو منتهي الصلاحية.");appliedCoupon={code,discount_type:data.discount_type,discount_value:Number(data.discount_value)};renderCart();msg.textContent="تم تطبيق الكوبون. سيُعاد التحقق منه عند تأكيد الطلب.";msg.style.color="#42704d";}catch(err){appliedCoupon=null;renderCart();msg.textContent=err.message||"تعذر التحقق من الكوبون.";msg.style.color="#9a453a";}});
+  $("#couponCode")?.addEventListener("input",()=>{appliedCoupon=null;renderCart();$("#couponMessage").textContent="";});
+
   loadProducts().then(renderCart);
 })(); 

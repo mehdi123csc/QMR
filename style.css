@@ -61,3 +61,4 @@ body{background:#fffdf9}
 .lightbox-close{position:absolute;top:14px;right:18px;width:46px;height:46px;border:1px solid #d6bd7c;border-radius:50%;background:#171511;color:#f4dfaa;font-size:32px;line-height:1;cursor:pointer}
 .lightbox-caption{color:#fff5dd;text-align:center;font-size:16px;line-height:1.7}
 body.lightbox-open{overflow:hidden}
+.product-thumbs{display:flex;gap:6px;padding:8px 12px 0;overflow-x:auto}.product-thumbs button{border:1px solid #e6dece;background:#fff;padding:2px;width:44px;height:50px;flex:0 0 auto;cursor:pointer}.product-thumbs img{width:100%;height:100%;object-fit:cover}.coupon-row{display:flex;gap:8px}.coupon-row input{min-width:0;flex:1}.coupon-apply{border:0;background:#171511;color:#fff;padding:9px 13px;font:700 12px inherit;cursor:pointer}#couponMessage{display:block;margin-top:5px;color:#9a453a}

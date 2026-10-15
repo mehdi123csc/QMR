@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11100e">
+  <meta name="color-scheme" content="light">
+  <link rel="canonical" href="https://mehdi123csc.github.io/QMR/">
   <meta name="description" content="Qmr — أزياء نسائية وبنات مختارة بذوق فاخر. تسوقي أحدث القطع مع الدفع عند الاستلام داخل الجزائر.">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
@@ -22,7 +24,7 @@
   <div class="announcement"><span class="announcement-star">✦</span> مرحبًا بكِ في Qmr — حيث تتحوّل الأناقة إلى حكاية <span class="announcement-star">✦</span> الدفع عند الاستلام داخل الجزائر</div>
   <header class="site-header">
     <button class="icon-btn menu-toggle" id="menuToggle" aria-label="فتح القائمة">☰</button>
-    <a class="brand" href="#home" aria-label="Qmr الصفحة الرئيسية"><img src="assets/qmr-logo.jpg" alt="شعار Qmr" onerror="this.hidden=true;this.parentElement.classList.add(&quot;logo-fallback&quot;)"><span>Qmr</span></a>
+    <a class="brand" href="#home" aria-label="Qmr الصفحة الرئيسية"><img src="qmr-logo.jpg" alt="شعار Qmr" onerror="this.hidden=true;this.parentElement.classList.add(&quot;logo-fallback&quot;)"><span>Qmr</span></a>
     <nav id="mainNav" class="main-nav">
       <a href="#home">الرئيسية</a><a href="#women">ملابس النساء</a><a href="#girls">ملابس البنات</a><a href="#products">تسوقي الآن</a>
     </nav>
@@ -72,13 +74,15 @@
   <aside class="cart-drawer" id="cartDrawer" aria-label="سلة المشتريات" aria-hidden="true">
     <div class="drawer-head"><div><p class="eyebrow">YOUR SELECTION</p><h2>سلة التسوق</h2></div><button class="icon-btn" id="closeCart" aria-label="إغلاق السلة">×</button></div>
     <div class="cart-items" id="cartItems"></div>
-    <div class="cart-summary"><div><span>المجموع</span><strong id="cartTotal">0 دج</strong></div><small>تكلفة التوصيل تُؤكّد عند التواصل لتأكيد الطلب.</small></div>
+    <div class="cart-summary"><div><span>المجموع</span><strong id="cartSubtotal">0 دج</strong></div><div id="discountRow" hidden><span>التخفيض</span><strong id="cartDiscount">−0 دج</strong></div><div><span>الإجمالي</span><strong id="cartTotal">0 دج</strong></div><small>تكلفة التوصيل تُؤكّد عند التواصل لتأكيد الطلب. العملة الحالية: DZD.</small></div>
     <form id="checkoutForm" class="checkout-form">
       <h3>بيانات التوصيل</h3>
       <label>الاسم الكامل<input name="customer_name" required maxlength="100" autocomplete="name" placeholder="اسمك الكامل"></label>
       <label>رقم الهاتف<input name="phone" required type="tel" inputmode="tel" maxlength="25" autocomplete="tel" placeholder="05 / 06 / 07 ..."></label>
-      <label>الولاية<input name="wilaya" required maxlength="80" placeholder="الولاية"></label>
+      <label>الولاية<select name="wilaya" id="wilayaSelect" required><option value="">اختاري الولاية</option></select></label>
+      <label>البلدية<select name="municipality" id="municipalityInput" required disabled><option value="">اختاري الولاية أولًا</option></select></label>
       <label>العنوان بالتفصيل<textarea name="address" required maxlength="500" rows="2" placeholder="البلدية، الحي، العنوان..."></textarea></label>
+      <label>كوبون التخفيض (اختياري)<div class="coupon-row"><input name="coupon_code" id="couponCode" maxlength="40" placeholder="مثال: QMR10"><button type="button" id="applyCoupon" class="coupon-apply">تطبيق</button></div><small id="couponMessage" role="status"></small></label>
       <label>ملاحظات (اختياري)<textarea name="notes" maxlength="500" rows="2" placeholder="المقاس أو اللون المفضل..."></textarea></label>
       <button class="btn btn-gold full-btn" type="submit">تأكيد الطلب — الدفع عند الاستلام</button>
       <p class="form-message" id="checkoutMessage" role="status"></p>
