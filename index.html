@@ -61,15 +61,21 @@
     </section>
     <section class="section products-section" id="products">
       <div class="section-heading"><div><p class="eyebrow">THE QMR EDIT</p><h2>قطع تستحق مكانًا في خزانتك</h2></div><p>أسعار بالدينار الجزائري</p></div>
+      <div class="shop-tools" aria-label="البحث والتصفية">
+        <label class="search-field"><span>بحث</span><input id="productSearch" type="search" placeholder="ابحثي عن منتج..." autocomplete="off" aria-label="ابحثي عن منتج"></label>
+        <label class="sort-field"><span>ترتيب</span><select id="productSort" aria-label="ترتيب المنتجات"><option value="newest">الأحدث أولًا</option><option value="price-asc">السعر: من الأقل للأعلى</option><option value="price-desc">السعر: من الأعلى للأقل</option><option value="name">الاسم: أ إلى ي</option></select></label>
+        <button class="filter-chip" id="favoritesOnly" type="button" aria-pressed="false">♡ المفضّلة <span id="favoritesCount">0</span></button>
+      </div>
       <div class="filter-row" role="group" aria-label="تصفية المنتجات">
         <button class="filter-chip active" data-filter="all">الكل</button><button class="filter-chip" data-filter="women" id="women">النساء</button><button class="filter-chip" data-filter="girls" id="girls">البنات</button>
       </div>
       <div id="productGrid" class="product-grid"><div class="loading-state">نحضّر لكِ المجموعة...</div></div>
       <p class="empty-products" id="emptyProducts" hidden>لا توجد منتجات في هذا القسم حاليًا. عودي قريبًا لاكتشاف الجديد.</p>
     </section>
+    <section class="promo-strip" aria-label="عروض Qmr"><div><p class="eyebrow">A LITTLE TREAT FOR YOU</p><h2>عروض وكوبونات بانتظارك</h2><p>إذا كان لديكِ رمز تخفيض، أدخليه في سلة التسوق قبل تأكيد الطلب.</p></div><button class="btn btn-gold" type="button" id="promoOpenCart">اكتشفي عروضكِ</button></section>
     <section class="editorial" id="about"><div class="editorial-mark">Q</div><div><p class="eyebrow">A LITTLE MORE YOU</p><h2>أسلوبكِ، بطريقتكِ.</h2><p>في Qmr نؤمن أن الأناقة ليست مناسبة خاصة؛ إنها شعور تختارينه كل يوم. اكتشفي قطعًا تمنحك الثقة والراحة، من الإطلالة اليومية إلى اللحظات المميزة.</p></div><a class="btn btn-outline" href="#products">اكتشفي المنتجات</a></section>
   </main>
-  <footer class="site-footer"><a class="footer-brand" href="#home">Qmr<span>✦</span></a><p>أناقة مختارة للنساء والبنات.</p><div class="footer-links"><a href="#products">المجموعة</a><a href="#about">من نحن</a><a href="admin.html">الإدارة</a></div><small>© <span id="year"></span> Qmr. جميع الحقوق محفوظة.</small></footer>
+  <footer class="site-footer"><a class="footer-brand" href="#home">Qmr<span>✦</span></a><p>أناقة مختارة للنساء والبنات.</p><div class="footer-links"><a href="#products">المجموعة</a><a href="#about">من نحن</a><a href="policies.html">السياسات والخصوصية</a><a href="admin.html">الإدارة</a></div><small>© <span id="year"></span> Qmr. جميع الحقوق محفوظة.</small></footer>
   <div class="overlay" id="cartOverlay"></div>
   <aside class="cart-drawer" id="cartDrawer" aria-label="سلة المشتريات" aria-hidden="true">
     <div class="drawer-head"><div><p class="eyebrow">YOUR SELECTION</p><h2>سلة التسوق</h2></div><button class="icon-btn" id="closeCart" aria-label="إغلاق السلة">×</button></div>

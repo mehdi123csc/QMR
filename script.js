@@ -13,7 +13,9 @@
     {id:"demo-7",name:"قميص أنيق",category:"women",price:3100,description:"يناسب إطلالات متعددة",image_url:"https://images.unsplash.com/photo-1598554747436-c9293d6a588f?auto=format&fit=crop&w=700&q=80",active:true},
     {id:"demo-8",name:"فستان يومي للبنات",category:"girls",price:2800,description:"تصميم لطيف وسهل التنسيق",image_url:"https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=700&q=80",active:true}
   ];
-  let products = [...demoProducts], filter = "all", supabase = null, appliedCoupon = null;
+  let products = [...demoProducts], filter = "all", supabase = null, appliedCoupon = null, favoritesOnly = false, productSort = "newest", searchQuery = "";
+  let favorites = new Set();
+  try { const savedFavorites = JSON.parse(localStorage.getItem("qmr-favorites") || "[]"); if (Array.isArray(savedFavorites)) favorites = new Set(savedFavorites.map(String)); } catch { favorites = new Set(); }
   let cart = [];
   try {
     const saved = JSON.parse(localStorage.getItem("qmr-cart") || "[]");
@@ -38,10 +40,15 @@
   }
   function renderProducts(){
     const grid=$("#productGrid"); if(!grid)return;
-    const visible=products.filter(p=>p.active!==false && (filter==="all"||p.category===filter));
-    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img id="productMain-${safe(p.id)}" data-product-image="${safe(p.id)}" loading="lazy" src="${safe(p.image_url||"qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button class="add-button" data-add="${safe(p.id)}" ${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"disabled":""}>${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"نفد المخزون":"أضيفي إلى السلة +"}</button></div>${Array.isArray(p.images)&&p.images.filter(u=>u&&u!==p.image_url).length?`<div class="product-thumbs">${p.images.filter(u=>u&&u!==p.image_url).slice(0,3).map((u,i)=>`<button type="button" data-gallery-image="${safe(p.id)}" data-image-url="${safe(u)}" aria-label="صورة إضافية ${i+1}"><img loading="lazy" src="${safe(u)}" alt=""></button>`).join("")}</div>`:""}<div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
-    $("#emptyProducts").hidden=visible.length>0;
-    if(!visible.length) grid.innerHTML="";
+    let visible=products.filter(p=>p.active!==false && (filter==="all"||p.category===filter));
+    if(searchQuery) visible=visible.filter(p=>`${p.name||""} ${p.description||""}`.toLocaleLowerCase("ar").includes(searchQuery));
+    if(favoritesOnly) visible=visible.filter(p=>favorites.has(String(p.id)));
+    if(productSort==="price-asc") visible.sort((a,b)=>Number(a.price)-Number(b.price));
+    else if(productSort==="price-desc") visible.sort((a,b)=>Number(b.price)-Number(a.price));
+    else if(productSort==="name") visible.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ar"));
+    const favCount=$("#favoritesCount"); if(favCount) favCount.textContent=String(favorites.size);
+    grid.innerHTML=visible.map(p=>`<article class="product-card"><div class="product-image"><img id="productMain-${safe(p.id)}" data-product-image="${safe(p.id)}" loading="lazy" src="${safe(p.image_url||"qmr-logo.jpg")}" alt="${safe(p.name)}" onerror="this.src='assets/qmr-logo.jpg'"><span class="product-tag">${p.category==="girls"?"GIRLS EDIT":"WOMEN EDIT"}</span><button type="button" class="favorite-button ${favorites.has(String(p.id))?"is-favorite":""}" data-favorite="${safe(p.id)}" aria-label="${favorites.has(String(p.id))?"إزالة من المفضّلة":"إضافة إلى المفضّلة"}" aria-pressed="${favorites.has(String(p.id))}">${favorites.has(String(p.id))?"♥":"♡"}</button><button class="add-button" data-add="${safe(p.id)}" ${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"disabled":""}>${Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=0?"نفد المخزون":"أضيفي إلى السلة +"}</button></div>${Array.isArray(p.images)&&p.images.filter(u=>u&&u!==p.image_url).length?`<div class="product-thumbs">${p.images.filter(u=>u&&u!==p.image_url).slice(0,3).map((u,i)=>`<button type="button" data-gallery-image="${safe(p.id)}" data-image-url="${safe(u)}" aria-label="صورة إضافية ${i+1}"><img loading="lazy" src="${safe(u)}" alt=""></button>`).join("")}</div>`:""}<div class="product-info"><h3>${safe(p.name)}</h3><p>${safe(p.description||"اختيار أنيق من Qmr")}</p><span class="price">${money(p.price)}</span>${p.old_price?`<span class="old-price">${money(p.old_price)}</span>`:""}</div></article>`).join("");
+    const empty=$("#emptyProducts");empty.hidden=visible.length>0;if(!visible.length){grid.innerHTML="";empty.textContent=favoritesOnly?"ما زال ما حفظتي حتى منتج في المفضّلة، اضغطي على ♡ في أي منتج باش تحفظيه.":searchQuery?"ما لقيناش منتجات تطابق البحث. جرّبي كلمة أخرى.":"لا توجد منتجات في هذا القسم حاليًا. عودي قريبًا لاكتشاف الجديد.";}
   }
   function openCart(){ $("#cartDrawer").classList.add("open");$("#cartOverlay").classList.add("show");$("#cartDrawer").setAttribute("aria-hidden","false");document.body.classList.add("no-scroll"); }
   function closeCart(){ $("#cartDrawer").classList.remove("open");$("#cartOverlay").classList.remove("show");$("#cartDrawer").setAttribute("aria-hidden","true");document.body.classList.remove("no-scroll"); }
@@ -58,11 +65,16 @@
     const galleryThumb=e.target.closest("[data-gallery-image]");if(galleryThumb){const main=$("#productMain-"+CSS.escape(galleryThumb.dataset.galleryImage));if(main)main.src=galleryThumb.dataset.imageUrl;return;}
     const productImage=e.target.closest("[data-product-image]");
     if(productImage){const p=products.find(x=>String(x.id)===String(productImage.dataset.productImage));if(p){const modal=$("#imageLightbox");$("#lightboxImage").src=productImage.src||p.image_url||"qmr-logo.jpg";$("#lightboxImage").alt=p.name||"صورة المنتج";$("#lightboxCaption").textContent=`${p.name||"المنتج"} — ${money(p.price)}`;modal.hidden=false;document.body.classList.add("lightbox-open");}return;}
+    const fav=e.target.closest("[data-favorite]");if(fav){const id=String(fav.dataset.favorite);if(favorites.has(id))favorites.delete(id);else favorites.add(id);try{localStorage.setItem("qmr-favorites",JSON.stringify([...favorites]));}catch{}renderProducts();return;}
     const add=e.target.closest("[data-add]"); if(add){addProduct(add.dataset.add);return;}
     const qty=e.target.closest("[data-qty]");if(qty){const item=cart.find(x=>String(x.id)===String(qty.dataset.qty));if(item){const delta=Number(qty.dataset.delta);const product=products.find(x=>String(x.id)===String(item.id));if(delta>0&&product&&Number.isFinite(Number(product.stock_quantity))&&item.qty>=Number(product.stock_quantity)){toast("الكمية المتوفرة في المخزون غير كافية");return;}item.qty+=delta;if(item.qty<1)cart=cart.filter(x=>x!==item);else item.qty=Math.min(99,item.qty);persistCart();}return;}
     const remove=e.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>String(x.id)!==String(remove.dataset.remove));persistCart();return;}
     const f=e.target.closest("[data-filter]");if(f){filter=f.dataset.filter;document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b===f));renderProducts();}
   });
+  $("#productSearch")?.addEventListener("input",e=>{searchQuery=String(e.target.value||"").trim().toLocaleLowerCase("ar");renderProducts();});
+  $("#productSort")?.addEventListener("change",e=>{productSort=e.target.value;renderProducts();});
+  $("#favoritesOnly")?.addEventListener("click",e=>{favoritesOnly=!favoritesOnly;e.currentTarget.classList.toggle("active",favoritesOnly);e.currentTarget.setAttribute("aria-pressed",String(favoritesOnly));renderProducts();});
+  $("#promoOpenCart")?.addEventListener("click",openCart);
   $("#openCart").addEventListener("click",openCart);$("#closeCart").addEventListener("click",closeCart);$("#cartOverlay").addEventListener("click",closeCart);
   $("#menuToggle").addEventListener("click",()=>$("#mainNav").classList.toggle("open"));
   $("#mainNav").addEventListener("click",e=>{if(e.target.closest("a"))$("#mainNav").classList.remove("open")});

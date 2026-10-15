@@ -1,0 +1,20 @@
+Qmr Store — Phase 1 features
+
+Changes in this package:
+- Product search by product name and description.
+- Category filtering and price/name sorting.
+- Favorites saved locally in the visitor's browser (localStorage); no database migration required.
+- Responsive mobile search/filter controls and product favorite buttons.
+- Promotional callout that opens the existing cart/coupon flow.
+- New policies.html page covering privacy, order terms, returns/exchanges, and delivery transparency.
+- Admin dashboard metrics based on the latest 100 orders loaded by the existing admin screen: order count, non-cancelled order totals, new orders, delivered orders, and most ordered product.
+
+Important:
+- This package does not modify Supabase SQL or database data.
+- Existing orders are not deleted or rewritten.
+- Delivery pricing/methods are unchanged.
+- The returns/exchanges section contains a clearly marked temporary note; replace it with the store's actual policy before treating it as final.
+- Favorites are device/browser-specific until a customer account feature is introduced.
+- The GitHub integration did not allow creating a branch, so these edits are packaged for manual review/upload rather than committed to the live repository.
+
+After uploading the files, test search, sorting, favorites, mobile layout, policy links, and admin metrics in the live site.
