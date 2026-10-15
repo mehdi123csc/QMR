@@ -44,14 +44,24 @@ declare
  v_qty integer; v_code text := upper(trim(coalesce(p_coupon_code,''))); v_coupon public.coupons%rowtype;
  v_order_id uuid;
 begin
- if jsonb_typeof(p_order->'items') <> 'array' or jsonb_array_length(p_order->'items') < 1 or jsonb_array_length(p_order->'items') > 50 then raise exception 'قائمة المنتجات غير صالحة.'; end if;
+ if p_order is null or jsonb_typeof(p_order->'items') is distinct from 'array' then
+   raise exception 'قائمة المنتجات غير صالحة.';
+ end if;
+ if jsonb_array_length(p_order->'items') < 1 or jsonb_array_length(p_order->'items') > 50 then
+   raise exception 'قائمة المنتجات غير صالحة.';
+ end if;
  if char_length(trim(coalesce(p_order->>'customer_name',''))) not between 2 and 100 then raise exception 'تحققي من الاسم الكامل.'; end if;
  if char_length(trim(coalesce(p_order->>'phone',''))) not between 8 and 25 then raise exception 'تحققي من رقم الهاتف.'; end if;
  if char_length(trim(coalesce(p_order->>'wilaya',''))) < 2 then raise exception 'اختاري الولاية.'; end if;
  if char_length(trim(coalesce(p_order->>'municipality',''))) < 2 then raise exception 'اختاري البلدية.'; end if;
  if char_length(trim(coalesce(p_order->>'address',''))) not between 4 and 500 then raise exception 'أدخلي العنوان بالتفصيل.'; end if;
  for v_item in select value from jsonb_array_elements(p_order->'items') loop
-   if coalesce(v_item->>'product_id','') !~* '^[0-9a-f-]{36}$' then raise exception 'يوجد منتج غير صالح في السلة.'; end if;
+   if coalesce(v_item->>'product_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+     raise exception 'يوجد منتج غير صالح في السلة.';
+   end if;
+   if coalesce(v_item->>'quantity','') !~ '^[0-9]{1,2}$' then
+     raise exception 'كمية المنتج غير صالحة.';
+   end if;
    v_qty := (v_item->>'quantity')::integer;
    if v_qty < 1 or v_qty > 99 then raise exception 'كمية المنتج غير صالحة.'; end if;
    select * into v_product from public.products where id=(v_item->>'product_id')::uuid and active=true for update;
@@ -76,9 +86,6 @@ end; $$;
 revoke all on function public.qmr_place_order(jsonb,text) from public;
 grant execute on function public.qmr_place_order(jsonb,text) to anon, authenticated;
 
--- Existing direct order insert policy remains for backwards compatibility; storefront code uses RPC.
--- For production, remove direct anonymous INSERT after verifying the deployed site exclusively uses qmr_place_order.
-
--- Close the old browser-direct order insertion path; use qmr_place_order only.
+-- Close the old browser-direct order insertion path; storefront must use qmr_place_order.
 drop policy if exists "Visitors create orders" on public.orders;
 revoke insert on public.orders from anon, authenticated;
